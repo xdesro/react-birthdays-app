@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import axios from 'axios';
 import './App.css';
 
 const Title = () => {
@@ -16,25 +17,27 @@ const BirthdayForm = ({addBirthday}) => {
   let birthday;
 
   return (
-    <div className="form-group">
-      <input type="text" className="form-control" placeholder="Name" ref={node => {
-            name = node;
-          }}/>
-      <div className="input-group">
-        <input type="date" className="form-control" placeholder="Search for..." ref={node => {
-            birthday = node;
-          }}/>
-        <span className="input-group-btn">
-          <button className="btn btn-default" type="button" onClick={() => {
-              addBirthday({
-                name: name.value,
-                date: birthday.value
-              });
-              name.value = '';
-              birthday.value = '';
-            }}>Add</button>
-        </span>
+    <div>
+      <div className="form-group">
+        <label htmlFor="name-input" className="control-label">Name</label>
+        <input id="name-input" type="text" className="form-control" placeholder="" ref={node => {
+              name = node;
+            }}/>
+        <p className="help-block">Type in your friend's name here.</p>
       </div>
+      <div className="form-group">
+        <input type="date" className="form-control" placeholder="Search for..." ref={node => {
+              birthday = node;
+            }}/>
+      </div>
+      <button className="btn btn-default" type="button" onClick={() => {
+        addBirthday({
+          name: name.value,
+          date: birthday.value
+        });
+        name.value = '';
+        birthday.value = '';
+      }}>Add</button>
     </div>
   )
 }
@@ -44,9 +47,9 @@ const Birthday = ({birthday, remove}) => {
   return (
     <tr>
     <td>{birthday.name}</td>
-    <td>{birthday.date}</td>
+    <td>{birthday.birthday}</td>
     <td>
-      <button className="btn btn-danger" onClick={() => {remove(birthday.id)}}>Remove</button>
+      <button className="btn btn-info" onClick={() => {remove(birthday.id)}}>Remove</button>
     </td>
     </tr>
   );
@@ -54,6 +57,8 @@ const Birthday = ({birthday, remove}) => {
 
 const BirthdayList = ({birthdays, remove}) => {
   // Map through the birthdays
+  // console.log(birthdays);
+
   const birthdayNode = birthdays.map((birthday) => {
     return (
       <Birthday birthday={birthday} key={birthday.id} remove={remove}/>
@@ -79,16 +84,39 @@ const BirthdayList = ({birthdays, remove}) => {
 }
 
 window.id = 0;
+
+const rootUrl = 'http://localhost:3005';
+
 class BirthdayApp extends Component {
+  
+  getInitialState() {
+    return {
+     friends: []
+    }
+  }
+  componentDidMount() {
+    const _this = this;
+    this.serverRequest = 
+    axios
+      .get(rootUrl + '/friends')
+      .then(function(result) {    
+      _this.setState({
+          friends: result.data
+      });
+    });
+  }
+  componentWillUnmount() {
+    this.serverRequest.abort();
+  }
   constructor(props) {
     // Pass props to parent class
     super(props);
-    // Set initial state
-    this.state = {
-      data: [
-        {name: "test", date: "2017-07-14", id: "0"}
-      ]
-    }
+  //   // Set initial state
+    this.state = {friends: []}
+  //     data: [
+  //       {name: "test", date: "2017-07-14", id: "0"}
+  //     ]
+  //   }
   }
   // Add Birthday Handler
   addBirthday(val) {
@@ -96,19 +124,20 @@ class BirthdayApp extends Component {
     const birthday = {name: val.name, date: val.date, id: window.id++}
 
     this.state.data.push(birthday);
-    console.log(birthday);
 
     this.setState({data: this.state.data});
   }
 
   handleRemove(id) {
-    const remainder = this.state.data.filter((birthday) => {
+    const remainder = this.state.friends.filter((birthday) => {
       if(birthday.id !== id) {
         return birthday;
+      } else {
+        return;
       }
     });
 
-    this.setState({data: remainder});
+    this.setState({friends: remainder});
   }
 
   render() {
@@ -117,7 +146,7 @@ class BirthdayApp extends Component {
       <Title />
       <BirthdayForm addBirthday={this.addBirthday.bind(this)} />
       <BirthdayList 
-        birthdays={this.state.data}
+        birthdays={this.state.friends}
         remove={this.handleRemove.bind(this)}
       />
       </div>
